@@ -1,13 +1,11 @@
 from fastapi import FastAPI
 import uvicorn
 
+from api.leagues import router as leagues_router
+
 
 app = FastAPI()
-
-
-@app.get("/")
-def start():
-    return "top here"
+app.include_router(leagues_router)
 
 
 if __name__ == '__main__':
