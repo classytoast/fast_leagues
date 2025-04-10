@@ -2,15 +2,9 @@ from models.pydantic.leagues import SeasonSchema, LeagueSchema
 
 
 league_list = [
-        LeagueSchema(id=1, name='APL'),
-        LeagueSchema(id=2, name='Bundesliga'),
-        LeagueSchema(id=3, name='Seria A'),
 ]
 
 season_list = [
-        SeasonSchema(id=1, name='2024/2025', league=league_list[0], leader_id=23, leader_name='team1'),
-        SeasonSchema(id=2, name='2024/2025', league=league_list[1], leader_id=10, leader_name='team2'),
-        SeasonSchema(id=3, name='2024/2025', league=league_list[2], leader_id=69, leader_name='team3'),
 ]
 
 #league_list[0].current_season = season_list[0]
