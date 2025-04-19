@@ -1,35 +1,56 @@
-from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload, joinedload
+from sqlalchemy import select, text
 
 from database import async_session
-from models.db.leagues import League, Season, Country
-from models.pydantic.leagues import SeasonSchema, LeagueSchema
+from models.db.leagues import League
+from models.pydantic.leagues import SeasonSchema, LeagueSchema, CountrySchema
 
 
 async def get_all_leagues() -> list[LeagueSchema]:
     async with async_session() as session:
-        query = select(
-            League.id,
-            League.country,
-            League.name,
-            League.seasons
-        ).options(
-            selectinload(
-                League.seasons.and_(
-                    Season.id == select(
-                        func.max(Season.id)
-                    ).filter(
-                        Season.league_id == League.id
-                    ).scalar_subquery()
-                )
+        query = text("""
+            WITH last_seasons AS (
+                SELECT 
+                    MAX(id) AS id,
+                    league_id,
+                    name
+                FROM
+                    seasons
+                GROUP BY
+                    league_id
             )
-        ).options(
-            joinedload(
-                League.country
-            )
-        )
+            SELECT
+                l.id,
+                l.name,
+                c.id,
+                c.name,
+                s.id,
+                s.name
+            FROM
+                leagues AS l
+            INNER JOIN last_seasons AS s
+                ON s.league_id = l.id 
+            INNER JOIN countries AS c
+                ON c.id = l.country_id
+        """)
         result = await session.execute(query)
         leagues = result.all()
+
+    pydantic_leagues = map_to_league_schemas(leagues)
+    return pydantic_leagues
+
+
+def map_to_league_schemas(rows: list[tuple]) -> list[LeagueSchema]:
+    leagues = []
+    for row in rows:
+        league_id, league_name, country_id, country_name, season_id, season_name = row
+
+        leagues.append(LeagueSchema(
+            id=league_id,
+            name=league_name,
+            country=CountrySchema(id=country_id, name=country_name),
+            current_season=SeasonSchema(id=season_id, name=season_name, leader_id=0, leader_name="mock_team")
+        ))
+
     return leagues
 
 

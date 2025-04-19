@@ -7,6 +7,7 @@ class CountrySchema(BaseModel):
     id: int
     name: str
 
+
 class LeagueSchema(BaseModel):
     id: int
     name: str
