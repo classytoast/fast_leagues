@@ -14,7 +14,7 @@ class Country(Base):
     id: Mapped[int_pk]
     name: Mapped[str]
 
-    leagues: Mapped[list["League"]] = relationship()
+    leagues: Mapped[list["League"]] = relationship(back_populates="country")
 
 
 class League(Base):
@@ -24,7 +24,7 @@ class League(Base):
     country_id: Mapped[int] = mapped_column(ForeignKey("countries.id", ondelete="CASCADE"))
 
     country: Mapped["Country"] = relationship(back_populates="leagues")
-    seasons: Mapped[list["Season"]] = relationship()
+    seasons: Mapped[list["Season"]] = relationship(back_populates="league")
 
 
 class Season(Base):
