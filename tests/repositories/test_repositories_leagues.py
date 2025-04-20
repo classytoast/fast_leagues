@@ -4,7 +4,7 @@ from contextlib import nullcontext as not_raise
 import pytest
 
 from errors import Missing
-from repositories.leagues import get_all_leagues, get_one_league, get_seasons
+from repositories.leagues import get_all_leagues, get_one_league, get_seasons, get_season
 
 
 @pytest.mark.asyncio
@@ -75,3 +75,31 @@ async def test_get_seasons(mock_session, league_id, expectation, db_session, lea
         assert (season.id, season.name, season.leader_id, season.leader_name) == (1, 'season1', 0, 'mock_team')
         season = result[1]
         assert (season.id, season.name, season.leader_id, season.leader_name) == (2, 'season2', 0, 'mock_team')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "league_id, season_id, expected_result, expectation",
+    [
+        (1, 1, (1, 'season1'), not_raise()),
+
+        (3, 5, (5, 'season5'), not_raise()),
+
+        (6, 6, None, pytest.raises(Missing)),
+
+        (1, 6, None, pytest.raises(Missing)),
+
+        (6, 1, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.leagues.async_session")
+async def test_get_season(mock_session, league_id, season_id, expected_result, expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_season(league_id, season_id)
+
+        assert result.id == expected_result[0]
+        assert result.name == expected_result[1]
+        assert result.leader_id == 0
+        assert result.leader_name == 'mock_team'

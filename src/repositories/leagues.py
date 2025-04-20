@@ -1,4 +1,4 @@
-from sqlalchemy import select, text
+from sqlalchemy import select, text, and_
 from sqlalchemy.exc import NoResultFound
 
 from database import async_session
@@ -114,4 +114,29 @@ def to_many_seasons_schemas(rows: list[tuple]) -> list[SeasonSchema]:
 
 
 async def get_season(league_id: int, season_id: int) -> SeasonSchema | None:
-    return []
+    async with async_session() as session:
+        query = select(
+            Season.id,
+            Season.name
+        ).filter(
+            and_(
+                Season.league_id == league_id,
+                Season.id == season_id
+            )
+        )
+        result = await session.execute(query)
+        try:
+            result = result.one()
+        except NoResultFound:
+            raise Missing(f"сезонa с id лиги - {league_id} и id сезона - {season_id} не найдено")
+
+    return to_one_season_schema(result)
+
+
+def to_one_season_schema(season: tuple) -> SeasonSchema:
+    return SeasonSchema(
+        id=season[0],
+        name=season[1],
+        leader_id=0,
+        leader_name="mock_team"
+    )
