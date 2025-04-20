@@ -3,7 +3,7 @@ from sqlalchemy.exc import NoResultFound
 
 from database import async_session
 from errors import Missing
-from models.db.leagues import League, Country
+from models.db.leagues import League, Country, Season
 from models.pydantic.leagues import SeasonSchema, LeagueSchema, CountrySchema
 
 
@@ -85,7 +85,32 @@ def to_one_league_schema(league: tuple) -> LeagueSchema:
 
 
 async def get_seasons(league_id: int) -> list[SeasonSchema]:
-    return []
+    async with async_session() as session:
+        query = select(
+            Season.id,
+            Season.name
+        ).filter(
+            Season.league_id == league_id
+        )
+        result = await session.execute(query)
+        result = result.all()
+        if len(result) == 0:
+            raise Missing(f"лига с id - {league_id} не найдена")
+
+    return to_many_seasons_schemas(result)
+
+
+def to_many_seasons_schemas(rows: list[tuple]) -> list[SeasonSchema]:
+    result = []
+    for season_id, name in rows:
+        result.append(SeasonSchema(
+            id=season_id,
+            name=name,
+            leader_id=0,
+            leader_name="mock_team"
+        ))
+
+    return result
 
 
 async def get_season(league_id: int, season_id: int) -> SeasonSchema | None:
