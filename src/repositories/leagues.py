@@ -35,24 +35,24 @@ async def get_all_leagues() -> list[LeagueSchema]:
                 ON c.id = l.country_id
         """)
         result = await session.execute(query)
-        leagues = result.all()
+        result = result.all()
 
-    return to_many_league_schemas(leagues)
+    return to_many_leagues_schemas(result)
 
 
-def to_many_league_schemas(rows: list[tuple]) -> list[LeagueSchema]:
-    leagues = []
+def to_many_leagues_schemas(rows: list[tuple]) -> list[LeagueSchema]:
+    result = []
     for row in rows:
         league_id, league_name, country_id, country_name, season_id, season_name = row
 
-        leagues.append(LeagueSchema(
+        result.append(LeagueSchema(
             id=league_id,
             name=league_name,
             country=CountrySchema(id=country_id, name=country_name),
             current_season=SeasonSchema(id=season_id, name=season_name, leader_id=0, leader_name="mock_team")
         ))
 
-    return leagues
+    return result
 
 
 async def get_one_league(league_id: int) -> LeagueSchema:
@@ -69,11 +69,11 @@ async def get_one_league(league_id: int) -> LeagueSchema:
         )
         result = await session.execute(query)
         try:
-            league = result.one()
+            result = result.one()
         except NoResultFound:
             raise Missing(f"лига с id - {league_id} не найдена")
 
-    return to_one_league_schema(league)
+    return to_one_league_schema(result)
 
 
 def to_one_league_schema(league: tuple) -> LeagueSchema:
