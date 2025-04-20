@@ -1,8 +1,10 @@
 from unittest.mock import patch
+from contextlib import nullcontext as not_raise
 
 import pytest
 
-from repositories.leagues import get_all_leagues
+from errors import Missing
+from repositories.leagues import get_all_leagues, get_one_league
 
 
 @pytest.mark.asyncio
@@ -26,3 +28,28 @@ async def test_get_all_leagues(mock_session, db_session, leagues_data):
     assert (result[2].country.id, result[2].country.name) == (2, 'country2')
     season = result[2].current_season
     assert (season.id, season.name, season.leader_id, season.leader_name) == (5, 'season5', 0, 'mock_team')
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "league_id, expected_result, expectation",
+    [
+        (1, (1, 'league1', 1, 'country1'), not_raise()),
+
+        (3, (3, 'league3', 2, 'country2'), not_raise()),
+
+        (6, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.leagues.async_session")
+async def test_get_one_league(mock_session, league_id, expected_result, expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_one_league(league_id)
+
+        assert result.id == expected_result[0]
+        assert result.name == expected_result[1]
+        assert result.country.id == expected_result[2]
+        assert result.country.name == expected_result[3]
+        assert result.current_season is None

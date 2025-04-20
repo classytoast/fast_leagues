@@ -1,7 +1,9 @@
 from sqlalchemy import select, text
+from sqlalchemy.exc import NoResultFound
 
 from database import async_session
-from models.db.leagues import League
+from errors import Missing
+from models.db.leagues import League, Country
 from models.pydantic.leagues import SeasonSchema, LeagueSchema, CountrySchema
 
 
@@ -35,11 +37,10 @@ async def get_all_leagues() -> list[LeagueSchema]:
         result = await session.execute(query)
         leagues = result.all()
 
-    pydantic_leagues = map_to_league_schemas(leagues)
-    return pydantic_leagues
+    return to_many_league_schemas(leagues)
 
 
-def map_to_league_schemas(rows: list[tuple]) -> list[LeagueSchema]:
+def to_many_league_schemas(rows: list[tuple]) -> list[LeagueSchema]:
     leagues = []
     for row in rows:
         league_id, league_name, country_id, country_name, season_id, season_name = row
@@ -54,17 +55,33 @@ def map_to_league_schemas(rows: list[tuple]) -> list[LeagueSchema]:
     return leagues
 
 
-async def get_one_league(league_id: int) -> LeagueSchema | None:
+async def get_one_league(league_id: int) -> LeagueSchema:
     async with async_session() as session:
         query = select(
             League.id,
-            League.country,
-            League.name
+            League.name,
+            League.country_id,
+            Country.name
+        ).join(
+            Country, Country.id == League.country_id
         ).filter(
             League.id == league_id
         )
-        league = await (session.execute(query)).scalars.one()
-    return league
+        result = await session.execute(query)
+        try:
+            league = result.one()
+        except NoResultFound:
+            raise Missing(f"лига с id - {league_id} не найдена")
+
+    return to_one_league_schema(league)
+
+
+def to_one_league_schema(league: tuple) -> LeagueSchema:
+    return LeagueSchema(
+        id=league[0],
+        name=league[1],
+        country=CountrySchema(id=league[2], name=league[3])
+    )
 
 
 async def get_seasons(league_id: int) -> list[SeasonSchema]:
