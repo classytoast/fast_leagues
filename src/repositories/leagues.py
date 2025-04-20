@@ -95,7 +95,7 @@ async def get_seasons(league_id: int) -> list[SeasonSchema]:
         result = await session.execute(query)
         result = result.all()
         if len(result) == 0:
-            raise Missing(f"лига с id - {league_id} не найдена")
+            raise Missing(f"сезонов с id лиги - {league_id} не найдено")
 
     return to_many_seasons_schemas(result)
 
