@@ -3,6 +3,7 @@ from unittest.mock import patch
 import pytest
 from httpx import AsyncClient, ASGITransport
 
+from errors import Missing
 from main import app
 from models.pydantic.leagues import LeagueSchema, SeasonSchema, CountrySchema
 
@@ -58,6 +59,19 @@ async def test_get_one_league(mock_service_get_one):
 
 
 @pytest.mark.asyncio
+@patch("api.leagues.service.get_one_league")
+async def test_get_one_league_missing(mock_service_get_one):
+    mock_service_get_one.side_effect = Missing("League not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/leagues/999")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "League not found"}
+    mock_service_get_one.assert_called_once_with(999)
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "service_return",
     [
@@ -108,3 +122,23 @@ async def test_get_season(mock_service_get_season):
 
     assert response.json() == service_get_season_return_value.model_dump()
     mock_service_get_season.assert_called_once_with(1, 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "endpoint, service_args",
+    [
+        ("/leagues/1/seasons/999", (1, 999)),
+        ("/leagues/999/seasons/1", (999, 1)),
+    ]
+)
+@patch("api.leagues.service.get_season")
+async def test_get_season_missing(mock_service_get_season, endpoint, service_args):
+    mock_service_get_season.side_effect = Missing("Season not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(endpoint)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Season not found"}
+    mock_service_get_season.assert_called_once_with(*service_args)
