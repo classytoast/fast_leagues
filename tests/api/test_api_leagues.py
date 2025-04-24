@@ -106,6 +106,19 @@ async def test_get_seasons(mock_service_get_seasons, service_return):
 
 
 @pytest.mark.asyncio
+@patch("api.leagues.service.get_seasons")
+async def test_get_seasons_missing(mock_service_get_season):
+    mock_service_get_season.side_effect = Missing("Seasons not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/leagues/999/seasons")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Seasons not found"}
+    mock_service_get_season.assert_called_once_with(999)
+
+
+@pytest.mark.asyncio
 @patch("api.leagues.service.get_season")
 async def test_get_season(mock_service_get_season):
     service_get_season_return_value = SeasonSchema(

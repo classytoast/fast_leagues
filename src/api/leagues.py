@@ -24,7 +24,10 @@ async def get_one_league(league_id: str) -> LeagueSchema:
 
 @router.get("/{league_id}/seasons")
 async def get_seasons(league_id: str) -> list[SeasonSchema]:
-    seasons = await service.get_seasons(int(league_id))
+    try:
+        seasons = await service.get_seasons(int(league_id))
+    except Missing as m:
+        raise HTTPException(status_code=404, detail=m.msg)
     return seasons
 
 
