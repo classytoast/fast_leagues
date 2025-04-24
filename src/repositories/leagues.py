@@ -13,8 +13,7 @@ async def get_all_leagues() -> list[LeagueSchema]:
             WITH last_seasons AS (
                 SELECT 
                     MAX(id) AS id,
-                    league_id,
-                    name
+                    league_id
                 FROM
                     seasons
                 GROUP BY
@@ -25,12 +24,14 @@ async def get_all_leagues() -> list[LeagueSchema]:
                 l.name,
                 c.id,
                 c.name,
-                s.id,
+                ls.id,
                 s.name
             FROM
                 leagues AS l
-            INNER JOIN last_seasons AS s
-                ON s.league_id = l.id 
+            INNER JOIN last_seasons AS ls
+                ON ls.league_id = l.id
+            INNER JOIN seasons AS s
+                ON ls.id = s.id 
             INNER JOIN countries AS c
                 ON c.id = l.country_id
         """)
