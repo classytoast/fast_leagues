@@ -4,7 +4,7 @@ from errors import Missing
 from models.pydantic.leagues import LeagueSchema, SeasonSchema
 from services import leagues as service
 
-router = APIRouter(prefix="/leagues")
+router = APIRouter(prefix="/leagues", tags=["leagues and seasons"])
 
 
 @router.get("/")
