@@ -39,7 +39,7 @@ class Season(Base):
     league_id: Mapped[int] = mapped_column(ForeignKey("leagues.id", ondelete="CASCADE"))
 
     league: Mapped["League"] = relationship(back_populates="seasons")
-    teams: Mapped["League"] = relationship(
-        back_populates="seasons_for_team",
-        secondary="season_teams"
+    teams: Mapped[list["Team"]] = relationship(
+        back_populates="seasons",
+        secondary="seasons_teams"
     )

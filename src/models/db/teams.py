@@ -7,7 +7,7 @@ from models.db.base import Base
 
 
 if TYPE_CHECKING:
-    from models.db.leagues import Country
+    from models.db.leagues import Country, Season
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
 
@@ -21,9 +21,9 @@ class Team(Base):
     manager: Mapped[str]
 
     country: Mapped["Country"] = relationship(back_populates="teams")
-    seasons: Mapped[list["SeasonTeam"]] = relationship(
-        back_populates="teams_in_season",
-        secondary="season_teams"
+    seasons: Mapped[list["Season"]] = relationship(
+        back_populates="teams",
+        secondary="seasons_teams"
     )
 
 
