@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 if TYPE_CHECKING:
-    from models.pydantic.leagues import LeagueSchema
+    from models.pydantic.leagues import SeasonSchema, CountrySchema
 
 
 class TeamSchema(BaseModel):
@@ -12,4 +12,5 @@ class TeamSchema(BaseModel):
     name: str
     founded: str
     manager: str
-    leagues: list['LeagueSchema']
+    country: "CountrySchema"
+    current_seasons: list['SeasonSchema']
