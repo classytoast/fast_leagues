@@ -1,9 +1,13 @@
-from typing import Annotated
+from typing import Annotated, TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 
 from models.db.base import Base
+
+
+if TYPE_CHECKING:
+    from models.db.teams import Team
 
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
@@ -15,6 +19,7 @@ class Country(Base):
     name: Mapped[str]
 
     leagues: Mapped[list["League"]] = relationship(back_populates="country")
+    teams: Mapped[list["Team"]] = relationship(back_populates="country")
 
 
 class League(Base):
@@ -34,3 +39,7 @@ class Season(Base):
     league_id: Mapped[int] = mapped_column(ForeignKey("leagues.id", ondelete="CASCADE"))
 
     league: Mapped["League"] = relationship(back_populates="seasons")
+    teams: Mapped["League"] = relationship(
+        back_populates="seasons_for_team",
+        secondary="season_teams"
+    )

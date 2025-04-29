@@ -8,6 +8,7 @@ from alembic import context
 from config import Config
 from models.db.base import Base  # noqa
 from models.db.leagues import *
+from models.db.teams import *
 
 config = context.config
 
