@@ -5,7 +5,12 @@ from httpx import AsyncClient, ASGITransport
 
 from errors import Missing
 from main import app
-from models.pydantic.leagues import LeagueSchema, SeasonSchema, CountrySchema
+from models.pydantic.leagues import (
+    CountrySchema,
+    LeagueWithCurrentSeasonSchema,
+    SeasonWithLeaderSchema, LeagueCountrySchema, SeasonRelSchema
+)
+from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
 
 
 @pytest.mark.asyncio
@@ -13,17 +18,33 @@ from models.pydantic.leagues import LeagueSchema, SeasonSchema, CountrySchema
     "service_return",
     [
         [
-            LeagueSchema(
+            LeagueWithCurrentSeasonSchema(
                 id=1,
                 name='APL',
                 country=CountrySchema(id=1, name='country1'),
-                current_season=SeasonSchema(id=1, name='2024/2025',leader_id=23, leader_name='team1')
+                seasons=SeasonWithLeaderSchema(
+                    id=1,
+                    name='2024/2025',
+                    teams=TeamSchema(
+                        id=1,
+                        name='team1',
+                        founded='1900',
+                        manager='manager1'
+                    ))
             ),
-            LeagueSchema(
+            LeagueWithCurrentSeasonSchema(
                 id=2,
                 name='Bundesliga',
                 country=CountrySchema(id=2, name='country2'),
-                current_season=SeasonSchema(id=2, name='2024/2025', leader_id=15, leader_name='team2')
+                seasons=SeasonWithLeaderSchema(
+                    id=2,
+                    name='2024/2025',
+                    teams=TeamSchema(
+                        id=15,
+                        name='team2',
+                        founded='1905',
+                        manager='manager2'
+                    ))
             )
         ],
         []
@@ -43,11 +64,10 @@ async def test_get_all_leagues(mock_service_get_all, service_return):
 @pytest.mark.asyncio
 @patch("api.leagues.service.get_one_league")
 async def test_get_one_league(mock_service_get_one):
-    service_get_one_return_value = LeagueSchema(
+    service_get_one_return_value = LeagueCountrySchema(
         id=1,
         name='APL',
-        country=CountrySchema(id=1, name='country1'),
-        current_season=SeasonSchema(id=1, name='2024/2025', leader_id=23, leader_name='team1')
+        country=CountrySchema(id=1, name='country1')
     )
     mock_service_get_one.return_value = service_get_one_return_value
 
@@ -76,19 +96,25 @@ async def test_get_one_league_missing(mock_service_get_one):
     "service_return",
     [
         [
-            SeasonSchema(
+            SeasonWithLeaderSchema(
                 id=1,
                 name='2024/2025',
-                league=LeagueSchema(id=1, name='APL', country=CountrySchema(id=1, name='country1')),
-                leader_id=23,
-                leader_name='team1'
+                teams=TeamSchema(
+                    id=1,
+                    name='team1',
+                    founded='1900',
+                    manager='manager1'
+                )
             ),
-            SeasonSchema(
+            SeasonWithLeaderSchema(
                 id=2,
                 name='2024/2025',
-                league=LeagueSchema(id=1, name='APL', country=CountrySchema(id=1, name='country1')),
-                leader_id=10,
-                leader_name='team2'
+                teams=TeamSchema(
+                    id=2,
+                    name='team2',
+                    founded='1900',
+                    manager='manager2'
+                )
             )
         ],
         []
@@ -121,12 +147,36 @@ async def test_get_seasons_missing(mock_service_get_season):
 @pytest.mark.asyncio
 @patch("api.leagues.service.get_season")
 async def test_get_season(mock_service_get_season):
-    service_get_season_return_value = SeasonSchema(
+    service_get_season_return_value = SeasonRelSchema(
             id=1,
             name='2024/2025',
-            league=LeagueSchema(id=1, name='APL', country=CountrySchema(id=1, name='country1')),
-            leader_id=23,
-            leader_name='team1'
+            league=LeagueCountrySchema(id=1, name='APL', country=CountrySchema(id=1, name='country1')),
+            teams=[
+                TeamInSeasonSchema(
+                    team_id=1,
+                    team_name='team1',
+                    position=1,
+                    games=3,
+                    wins=2,
+                    draws=1,
+                    loses=0,
+                    scored_goals=5,
+                    conceded_goals=2,
+                    points=7
+                ),
+                TeamInSeasonSchema(
+                    team_id=1,
+                    team_name='team2',
+                    position=2,
+                    games=3,
+                    wins=1,
+                    draws=1,
+                    loses=1,
+                    scored_goals=3,
+                    conceded_goals=1,
+                    points=4
+                )
+            ]
     )
     mock_service_get_season.return_value = service_get_season_return_value
 
