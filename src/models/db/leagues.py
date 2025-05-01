@@ -36,6 +36,7 @@ class Season(Base):
     __tablename__ = "seasons"
     id: Mapped[int_pk]
     name: Mapped[str]
+    is_current_season: Mapped[bool] = mapped_column(default=False)
     league_id: Mapped[int] = mapped_column(ForeignKey("leagues.id", ondelete="CASCADE"))
 
     league: Mapped["League"] = relationship(back_populates="seasons")

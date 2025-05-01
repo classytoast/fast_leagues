@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from models.db.leagues import Country, Season
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
+int_default_0 = Annotated[int, mapped_column(default=0)]
 
 
 class Team(Base):
@@ -37,3 +38,12 @@ class SeasonTeam(Base):
         ForeignKey("teams.id", ondelete="CASCADE"),
         primary_key=True
     )
+
+    position: Mapped[int_default_0]
+    games: Mapped[int_default_0]
+    wins: Mapped[int_default_0]
+    draws: Mapped[int_default_0]
+    loses: Mapped[int_default_0]
+    scored_goals: Mapped[int_default_0]
+    conceded_goals: Mapped[int_default_0]
+    points: Mapped[int_default_0]
