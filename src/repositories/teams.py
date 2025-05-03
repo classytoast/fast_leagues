@@ -9,6 +9,7 @@ from models.pydantic.teams import TeamRelSchema
 
 
 async def get_all_teams() -> list[TeamRelSchema]:
+    """Выгрузить из БД список всех команд с полной информацией"""
     async with async_session() as session:
         query = select(
             Team
@@ -24,6 +25,7 @@ async def get_all_teams() -> list[TeamRelSchema]:
 
 
 async def get_one_team(team_id: int) -> TeamRelSchema:
+    """Выгрузить из БД полную информацию о конкретной команде по ID"""
     async with async_session() as session:
         query = select(
             Team

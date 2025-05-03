@@ -15,6 +15,7 @@ from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
 
 
 async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
+    """Выгрузить из БД список всех лиг с их текущими сезонами и лидирующими командами"""
     async with async_session() as session:
         query = select(
             League.id,
@@ -52,6 +53,7 @@ async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
 def to_many_leagues_schemas(
         rows: list[tuple]
 ) -> list[LeagueWithCurrentSeasonSchema]:
+    """Преобразует сырые SQL-результаты в список pydantic схем лиг с текущими сезонами"""
     result = []
     for row in rows:
         (league_id, league_name, country_id, country_name,
@@ -76,6 +78,7 @@ def to_many_leagues_schemas(
 
 
 async def get_one_league(league_id: int) -> LeagueCountrySchema:
+    """Выгрузить из БД подробную информацию о конкретной лиге с данными о стране"""
     async with async_session() as session:
         query = select(
             League.id,
@@ -97,6 +100,7 @@ async def get_one_league(league_id: int) -> LeagueCountrySchema:
 
 
 def to_one_league_schema(league: tuple) -> LeagueCountrySchema:
+    """Преобразует кортеж данных лиги в pydantic схему"""
     return LeagueCountrySchema(
         id=league[0],
         name=league[1],
@@ -105,6 +109,7 @@ def to_one_league_schema(league: tuple) -> LeagueCountrySchema:
 
 
 async def get_seasons(league_id: int) -> list[SeasonWithLeaderSchema]:
+    """Выгрузить из БД список сезонов указанной лиги с командами-лидерами"""
     async with async_session() as session:
         query = select(
             Season.id,
@@ -132,6 +137,7 @@ async def get_seasons(league_id: int) -> list[SeasonWithLeaderSchema]:
 
 
 def to_many_seasons_schemas(rows: list[tuple]) -> list[SeasonWithLeaderSchema]:
+    """Преобразует сырые данные сезонов в список pydantic схем"""
     result = []
     for season_id, season_name, leader_id, leader_name, leader_founded, leader_manager in rows:
         result.append(SeasonWithLeaderSchema(
@@ -149,6 +155,13 @@ def to_many_seasons_schemas(rows: list[tuple]) -> list[SeasonWithLeaderSchema]:
 
 
 async def get_season(league_id: int, season_id: int) -> SeasonRelSchema:
+    """Выгрузить из БД полную информацию о конкретном сезоне лиги.
+
+    SQL-логика:
+        Выполняет два запроса:
+        1. Основные данные сезона, лиги и страны
+        2. Данные всех команд в сезоне с их статистикой
+    """
     async with async_session() as session:
         query = select(
             Season.id,
@@ -198,6 +211,7 @@ async def get_season(league_id: int, season_id: int) -> SeasonRelSchema:
 
 
 def to_one_season_schema(season: tuple, teams: list[tuple]) -> SeasonRelSchema:
+    """Собирает полную pydantic схему сезона с данными о командах"""
     teams_schema = []
     for team in teams:
         team_id, name, position, games, wins, draws, loses, scored_goals, conceded_goals, points = team
