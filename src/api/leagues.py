@@ -19,27 +19,27 @@ async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
 
 
 @router.get("/{league_id}")
-async def get_one_league(league_id: str) -> LeagueCountrySchema:
+async def get_one_league(league_id: int) -> LeagueCountrySchema:
     try:
-        league = await service.get_one_league(int(league_id))
+        league = await service.get_one_league(league_id)
     except Missing as m:
         raise HTTPException(status_code=404, detail=m.msg)
     return league
 
 
 @router.get("/{league_id}/seasons")
-async def get_seasons(league_id: str) -> list[SeasonWithLeaderSchema]:
+async def get_seasons(league_id: int) -> list[SeasonWithLeaderSchema]:
     try:
-        seasons = await service.get_seasons(int(league_id))
+        seasons = await service.get_seasons(league_id)
     except Missing as m:
         raise HTTPException(status_code=404, detail=m.msg)
     return seasons
 
 
 @router.get("/{league_id}/seasons/{season_id}")
-async def get_season(league_id: str, season_id: str) -> SeasonRelSchema:
+async def get_season(league_id: int, season_id: int) -> SeasonRelSchema:
     try:
-        season = await service.get_season(int(league_id), int(season_id))
+        season = await service.get_season(league_id, season_id)
     except Missing as m:
         raise HTTPException(status_code=404, detail=m.msg)
     return season
