@@ -8,7 +8,9 @@ from main import app
 from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
-    SeasonWithLeaderSchema, LeagueCountrySchema, SeasonRelSchema
+    SeasonWithLeaderSchema,
+    LeagueCountrySchema,
+    SeasonRelSchema
 )
 from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
 
