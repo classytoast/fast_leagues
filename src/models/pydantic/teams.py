@@ -4,13 +4,17 @@ from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from models.pydantic.leagues import CountrySchema, SeasonSchema
+    from models.pydantic.persons import BasePersonSchema
 
 
-class TeamSchema(BaseModel):
+class BaseTeamSchema(BaseModel):
     id: int
     name: str
+
+
+class TeamSchema(BaseTeamSchema):
     founded: str
-    manager: str
+    manager: "BasePersonSchema"
 
 
 class TeamRelSchema(TeamSchema):
