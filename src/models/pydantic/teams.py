@@ -1,10 +1,10 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from models.pydantic.leagues import CountrySchema, SeasonSchema
-    from models.pydantic.persons import BasePersonSchema
+    from models.pydantic.persons import BasePersonSchema, BasePlayerSchema
 
 
 class BaseTeamSchema(BaseModel):
@@ -12,14 +12,15 @@ class BaseTeamSchema(BaseModel):
     name: str
 
 
-class TeamSchema(BaseTeamSchema):
+class TeamDetailsSchema(BaseTeamSchema):
     founded: str
-    manager: "BasePersonSchema"
+    manager: Optional["BasePersonSchema"]
 
 
-class TeamRelSchema(TeamSchema):
+class TeamRelSchema(TeamDetailsSchema):
     country: "CountrySchema"
     current_seasons: list['SeasonSchema'] = Field(validation_alias="seasons")
+    players: list["BasePlayerSchema"]
 
 
 class TeamInSeasonSchema(BaseModel):

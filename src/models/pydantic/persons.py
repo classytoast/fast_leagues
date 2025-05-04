@@ -15,28 +15,32 @@ class BasePersonSchema(BaseModel):
     name: str
 
 
-class PersonSchema(BasePersonSchema):
-    complete_name: str
+class PersonDetailsSchema(BasePersonSchema):
+    full_name: str
     birth_date: datetime
     country: 'CountrySchema'
     team: Optional['BaseTeamSchema']
 
 
-class StatusInGame(Enum):
+class BasePlayerSchema(BasePersonSchema):
+    team_number: int = Field(ge=1)
+
+
+class PlayerDetailsSchema(PersonDetailsSchema):
+    team_number: int = Field(ge=1)
+
+
+class StatusInGame(str, Enum):
     starting_lineups = 'starting lineups'
     substitutes = 'substitutes'
 
 
-class PlayerInGameSchema(BasePersonSchema):
-    team_number: int = Field(ge=1, description="Номер игрока должен быть ≥ 1")
-    status = StatusInGame
+class PlayerInGameSchema(BasePlayerSchema):
+    status: StatusInGame
 
 
-class PlayerSchema(PersonSchema):
-    team_number: int = Field(ge=1, description="Номер игрока должен быть ≥ 1")
-
-
-class PlayerInTopTableSchema(BasePersonSchema):
+class PlayerStatsSummarySchema(BasePlayerSchema):
     team: 'BaseTeamSchema'
     games: int
     effective_actions: int
+

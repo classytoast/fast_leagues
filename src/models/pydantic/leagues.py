@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
+    from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
 
 
 class CountrySchema(BaseModel):
@@ -34,7 +34,7 @@ class SeasonSchema(BaseModel):
 
 
 class SeasonWithLeaderSchema(SeasonSchema):
-    leader: 'TeamSchema' = Field(validation_alias="teams")
+    leader: 'BaseTeamSchema' = Field(validation_alias="teams")
 
 
 class SeasonRelSchema(SeasonSchema):
