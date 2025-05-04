@@ -8,6 +8,7 @@ from models.db.base import Base
 
 if TYPE_CHECKING:
     from models.db.teams import Team
+    from models.db.persons import Person
 
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
@@ -20,6 +21,7 @@ class Country(Base):
 
     leagues: Mapped[list["League"]] = relationship(back_populates="country")
     teams: Mapped[list["Team"]] = relationship(back_populates="country")
+    persons: Mapped[list["Person"]] = relationship(back_populates="country")
 
 
 class League(Base):

@@ -9,6 +9,7 @@ from config import Config
 from models.db.base import Base  # noqa
 from models.db.leagues import *
 from models.db.teams import *
+from models.db.persons import *
 
 config = context.config
 
