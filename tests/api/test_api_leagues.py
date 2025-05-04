@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -10,8 +11,9 @@ from models.pydantic.leagues import (
     LeagueWithCurrentSeasonSchema,
     SeasonWithLeaderSchema,
     LeagueCountrySchema,
-    SeasonRelSchema
+    SeasonRelSchema, SeasonWithPlayersSchema
 )
+from models.pydantic.persons import PlayerDetailsSchema
 from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
 
 
@@ -199,3 +201,84 @@ async def test_get_season_missing(mock_service_get_season, endpoint, service_arg
     assert response.status_code == 404
     assert response.json() == {"detail": "Season not found"}
     mock_service_get_season.assert_called_once_with(*service_args)
+
+
+@pytest.mark.asyncio
+@patch("api.leagues.service.get_players_in_season")
+async def test_get_players_in_season(mock_service_get_players):
+    service_get_players_return_value = SeasonWithPlayersSchema(
+            id=1,
+            name='2024/2025',
+            players=[
+                PlayerDetailsSchema(
+                    id=1,
+                    name='player1',
+                    full_name='full_player1',
+                    birth_date=datetime(2000, 1, 1),
+                    team_number=10,
+                    country=CountrySchema(id=1, name='country1'),
+                    team=BaseTeamSchema(id=1, name='team1')
+                ),
+                PlayerDetailsSchema(
+                    id=2,
+                    name='player2',
+                    full_name='full_player2',
+                    birth_date=datetime(2000, 2, 1),
+                    team_number=20,
+                    country=CountrySchema(id=2, name='country2'),
+                    team=BaseTeamSchema(id=2, name='team2')
+                )
+            ]
+    )
+    mock_service_get_players.return_value = service_get_players_return_value
+
+    expected_response = dict(
+        id=1,
+        name='2024/2025',
+        players=[
+            dict(
+                id=1,
+                name='player1',
+                full_name='full_player1',
+                birth_date='2000-01-01T00:00:00',
+                team_number=10,
+                country=dict(id=1, name='country1'),
+                team=dict(id=1, name='team1')
+            ),
+            dict(
+                id=2,
+                name='player2',
+                full_name='full_player2',
+                birth_date='2000-02-01T00:00:00',
+                team_number=20,
+                country=dict(id=2, name='country2'),
+                team=dict(id=2, name='team2')
+            )
+        ]
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/leagues/1/seasons/1/players")
+
+    assert response.json() == expected_response
+    mock_service_get_players.assert_called_once_with(1, 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "endpoint, service_args",
+    [
+        ("/leagues/1/seasons/999/players", (1, 999)),
+        ("/leagues/999/seasons/1/players", (999, 1)),
+    ]
+)
+@patch("api.leagues.service.get_players_in_season")
+async def test_get_players_in_season_missing(mock_service_get_players, endpoint, service_args):
+    mock_service_get_players.side_effect = Missing("Season not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(endpoint)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Season not found"}
+    mock_service_get_players.assert_called_once_with(*service_args)

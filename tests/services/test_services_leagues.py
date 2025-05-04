@@ -2,7 +2,13 @@ from unittest.mock import patch, Mock
 
 import pytest
 
-from services.leagues import get_all_leagues, get_one_league, get_seasons, get_season
+from services.leagues import (
+    get_all_leagues,
+    get_one_league,
+    get_seasons,
+    get_season,
+    get_players_in_season
+)
 
 
 @pytest.mark.asyncio
@@ -51,3 +57,16 @@ async def test_get_season(mock_repo_get_season):
 
     assert result == repo_return
     mock_repo_get_season.assert_called_once_with(1, 2)
+
+
+@pytest.mark.asyncio
+@patch("services.leagues.data.get_players_in_season")
+async def test_get_players_in_season(mock_repo_get_players):
+    repo_return = Mock()
+    mock_repo_get_players.return_value = repo_return
+
+    result = await get_players_in_season(1, 2)
+
+    assert result == repo_return
+    mock_repo_get_players.assert_called_once_with(1, 2)
+
