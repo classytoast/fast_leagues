@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
+    from models.pydantic.persons import PlayerDetailsSchema
 
 
 class CountrySchema(BaseModel):
@@ -35,6 +36,10 @@ class SeasonSchema(BaseModel):
 
 class SeasonWithLeaderSchema(SeasonSchema):
     leader: 'BaseTeamSchema' = Field(validation_alias="teams")
+
+
+class SeasonWithPlayersSchema(SeasonSchema):
+    players: list['PlayerDetailsSchema']
 
 
 class SeasonRelSchema(SeasonSchema):

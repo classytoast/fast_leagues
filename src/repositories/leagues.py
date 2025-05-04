@@ -1,17 +1,21 @@
 from sqlalchemy import select, and_
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.orm import selectinload
 
 from database import async_session
 from errors import Missing
 from models.db.leagues import League, Country, Season
+from models.db.persons import Player, Person
 from models.db.teams import SeasonTeam, Team
 from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
     SeasonWithLeaderSchema,
     LeagueCountrySchema,
-    SeasonRelSchema
+    SeasonRelSchema,
+    SeasonWithPlayersSchema
 )
+from models.pydantic.persons import PlayerDetailsSchema
 from models.pydantic.teams import TeamInSeasonSchema, BaseTeamSchema
 
 
@@ -231,4 +235,57 @@ def to_one_season_schema(season: tuple, teams: list[tuple]) -> SeasonRelSchema:
             country=CountrySchema(id=country_id, name=country_name)
         ),
         teams=teams_schema
+    )
+
+
+async def get_players_in_season(league_id: int, season_id: int) -> SeasonWithPlayersSchema:
+    """Выгрузить из БД информацию об игроках в конкретном сезоне лиги"""
+    async with async_session() as session:
+        query = select(
+            Season
+        ).options(
+            selectinload(
+                Season.teams
+            ).selectinload(
+                Team.players
+            ).joinedload(
+                Player.person
+            ).joinedload(
+                Person.country
+            )
+        ).filter(
+            and_(
+                Season.league_id == league_id,
+                Season.id == season_id
+            )
+        )
+
+        result = await session.execute(query)
+        try:
+            season_result = result.scalars().one()
+        except NoResultFound:
+            raise Missing(f"сезонa с id лиги - {league_id} и id сезона - {season_id} не найдено")
+
+    return to_season_with_players_schema(season_result)
+
+
+def to_season_with_players_schema(season_data: Season) -> SeasonWithPlayersSchema:
+    """Собирает pydantic схему сезона с данными об игроках"""
+    players = []
+    for team in season_data.teams:
+        for player in team.players:
+            players.append(PlayerDetailsSchema(
+                id=player.id,
+                name=player.person.name,
+                full_name=player.person.full_name,
+                birth_date=player.person.birth_date,
+                team_number=player.team_number,
+                country=CountrySchema.model_validate(player.person.country, from_attributes=True),
+                team=BaseTeamSchema.model_validate(team, from_attributes=True)
+            ))
+
+    return SeasonWithPlayersSchema(
+        id=season_data.id,
+        name=season_data.name,
+        players=players
     )

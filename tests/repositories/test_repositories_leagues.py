@@ -1,10 +1,17 @@
+from datetime import datetime
 from unittest.mock import patch
 from contextlib import nullcontext as not_raise
 
 import pytest
 
 from errors import Missing
-from repositories.leagues import get_all_leagues, get_one_league, get_seasons, get_season
+from repositories.leagues import (
+    get_all_leagues,
+    get_one_league,
+    get_seasons,
+    get_season,
+    get_players_in_season
+)
 
 
 @pytest.mark.asyncio
@@ -123,3 +130,32 @@ async def test_get_season(mock_session, league_id, season_id, expected_season, e
         country = league.country
         assert country.id == expected_country[0]
         assert country.name == expected_country[1]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "league_id, season_id, expected_players, expectation",
+    [
+        (1, 1,
+         [
+             (1, 'person1', "complete1", datetime(2000, 1, 1), 10, 1, 1),
+             (2, 'person2', "complete2", datetime(2000, 2, 1), 11, 1, 1),
+             (3, 'person3', "complete3", datetime(2000, 3, 1), 12, 2, 2)
+         ], not_raise()),
+
+        (1, 15, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.leagues.async_session")
+async def test_get_players_in_season(mock_session, league_id, season_id, expected_players,
+                                     expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_players_in_season(league_id, season_id)
+
+        assert (result.id, result.name) == (1, 'season1')
+        players = result.players
+        assert len(players) == len(expected_players)
+        assert [(p.id, p.name, p.full_name, p.birth_date, p.team_number, p.country.id, p.team.id)
+                for p in players] == expected_players
