@@ -14,13 +14,15 @@ from models.pydantic.persons import (
 from models.pydantic.teams import (
     TeamRelSchema,
     BaseTeamSchema,
-    TeamInSeasonSchema
+    TeamInSeasonSchema,
+    TeamDetailsSchema
 )
 
 
 BaseTeamSchema.model_rebuild()
 TeamRelSchema.model_rebuild()
 TeamInSeasonSchema.model_rebuild()
+TeamDetailsSchema.model_rebuild()
 CountrySchema.model_rebuild()
 SeasonSchema.model_rebuild()
 SeasonWithLeaderSchema.model_rebuild()
