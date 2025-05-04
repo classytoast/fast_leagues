@@ -12,7 +12,7 @@ from models.pydantic.leagues import (
     LeagueCountrySchema,
     SeasonRelSchema
 )
-from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
+from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
 
 
 @pytest.mark.asyncio
@@ -27,11 +27,9 @@ from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
                 seasons=SeasonWithLeaderSchema(
                     id=1,
                     name='2024/2025',
-                    teams=TeamSchema(
+                    teams=BaseTeamSchema(
                         id=1,
-                        name='team1',
-                        founded='1900',
-                        manager='manager1'
+                        name='team1'
                     ))
             ),
             LeagueWithCurrentSeasonSchema(
@@ -41,11 +39,9 @@ from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
                 seasons=SeasonWithLeaderSchema(
                     id=2,
                     name='2024/2025',
-                    teams=TeamSchema(
+                    teams=BaseTeamSchema(
                         id=15,
-                        name='team2',
-                        founded='1905',
-                        manager='manager2'
+                        name='team2'
                     ))
             )
         ],
@@ -101,21 +97,17 @@ async def test_get_one_league_missing(mock_service_get_one):
             SeasonWithLeaderSchema(
                 id=1,
                 name='2024/2025',
-                teams=TeamSchema(
+                teams=BaseTeamSchema(
                     id=1,
-                    name='team1',
-                    founded='1900',
-                    manager='manager1'
+                    name='team1'
                 )
             ),
             SeasonWithLeaderSchema(
                 id=2,
                 name='2024/2025',
-                teams=TeamSchema(
+                teams=BaseTeamSchema(
                     id=2,
-                    name='team2',
-                    founded='1900',
-                    manager='manager2'
+                    name='team2'
                 )
             )
         ],

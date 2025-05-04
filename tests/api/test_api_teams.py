@@ -9,7 +9,8 @@ from models.pydantic.leagues import (
     CountrySchema,
     SeasonSchema
 )
-from models.pydantic.teams import TeamRelSchema
+from models.pydantic.persons import BasePersonSchema, BasePlayerSchema
+from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
 
 
 @pytest.mark.asyncio
@@ -17,31 +18,17 @@ from models.pydantic.teams import TeamRelSchema
     "service_return",
     [
         [
-            TeamRelSchema(
+            TeamDetailsSchema(
                 id=1,
                 name='team1',
                 founded='1900',
-                manager='manager1',
-                country=CountrySchema(id=1, name='country1'),
-                seasons=[
-                    SeasonSchema(
-                        id=1,
-                        name='2024/2025'
-                    )
-                ]
+                manager=BasePersonSchema(id=1, name='person1')
             ),
-            TeamRelSchema(
+            TeamDetailsSchema(
                 id=2,
                 name='team2',
                 founded='1905',
-                manager='manager2',
-                country=CountrySchema(id=2, name='country2'),
-                seasons=[
-                    SeasonSchema(
-                        id=2,
-                        name='2024/2025'
-                    )
-                ]
+                manager=None
             ),
         ],
         []
@@ -65,13 +52,14 @@ async def test_get_one_team(mock_service_get_one):
         id=1,
         name='team1',
         founded='1900',
-        manager='manager1',
+        manager=BasePersonSchema(id=1, name='person1'),
         country=CountrySchema(id=1, name='country1'),
         seasons=[
-            SeasonSchema(
-                id=1,
-                name='2024/2025'
-            )
+            SeasonSchema(id=1, name='2024/2025')
+        ],
+        players=[
+            BasePlayerSchema(id=1, name='person2', team_number=10),
+            BasePlayerSchema(id=2, name='person3', team_number=11),
         ]
     )
     mock_service_get_one.return_value = service_get_one_return_value

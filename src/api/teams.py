@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from errors import Missing
-from models.pydantic.teams import TeamRelSchema
+from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
 from services import teams as service
 
 
@@ -9,7 +9,7 @@ router = APIRouter(prefix="/teams", tags=["teams"])
 
 
 @router.get("/")
-async def get_all_teams() -> list[TeamRelSchema]:
+async def get_all_teams() -> list[TeamDetailsSchema]:
     """Получить список всех команд с полной информацией о каждой"""
     teams = await service.get_all_teams()
     return teams
