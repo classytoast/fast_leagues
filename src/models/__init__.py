@@ -8,7 +8,8 @@ from models.pydantic.leagues import (
 from models.pydantic.persons import (
     BasePersonSchema,
     BasePlayerSchema,
-    PlayerDetailsSchema
+    PlayerDetailsSchema,
+    PersonDetailsSchema
 )
 from models.pydantic.teams import (
     TeamRelSchema,
@@ -28,3 +29,4 @@ BasePersonSchema.model_rebuild()
 BasePlayerSchema.model_rebuild()
 PlayerDetailsSchema.model_rebuild()
 SeasonWithPlayersSchema.model_rebuild()
+PersonDetailsSchema.model_rebuild()

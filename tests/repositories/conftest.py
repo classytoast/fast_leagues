@@ -67,6 +67,8 @@ async def leagues_data(db_session):
                birth_date=datetime(1980, 2, 1), country_id=2),
         Person(id=7, name='person7', full_name="complete7",
                birth_date=datetime(1980, 3, 1), country_id=2),
+        Person(id=8, name='person8', full_name="complete8",
+               birth_date=datetime(1990, 1, 1), country_id=1),
     ])
 
     db_session.add_all([
@@ -74,6 +76,7 @@ async def leagues_data(db_session):
         Player(id=2, team_number=11, person_id=2, team_id=1),
         Player(id=3, team_number=12, person_id=3, team_id=2),
         Player(id=4, team_number=13, person_id=4, team_id=3),
+        Player(id=5, team_number=None, person_id=8, team_id=None),
     ])
 
     db_session.add_all([
