@@ -27,7 +27,7 @@ class BasePlayerSchema(BasePersonSchema):
 
 
 class PlayerDetailsSchema(PersonDetailsSchema):
-    team_number: int = Field(ge=1)
+    team_number: Optional[int] = Field(ge=1)
 
 
 class StatusInGame(str, Enum):
