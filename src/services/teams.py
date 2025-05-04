@@ -1,8 +1,8 @@
-from models.pydantic.teams import TeamRelSchema
+from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
 from repositories import teams as data
 
 
-async def get_all_teams() -> list[TeamRelSchema]:
+async def get_all_teams() -> list[TeamDetailsSchema]:
     """Получает список всех команд с их полными данными"""
     teams = await data.get_all_teams()
     return teams
