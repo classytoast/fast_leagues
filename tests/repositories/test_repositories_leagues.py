@@ -19,14 +19,14 @@ async def test_get_all_leagues(mock_session, db_session, leagues_data):
     season = result[0].current_season
     assert (season.id, season.name) == (1, 'season1')
     leader = season.leader
-    assert (leader.id, leader.name, leader.founded, leader.manager) == (1, 'team1', '1900', 'manager')
+    assert (leader.id, leader.name) == (1, 'team1')
 
     assert (result[1].id, result[1].name) == (2, 'league2')
     assert (result[1].country.id, result[1].country.name) == (1, 'country1')
     season = result[1].current_season
     assert (season.id, season.name) == (3, 'season3')
     leader = season.leader
-    assert (leader.id, leader.name, leader.founded, leader.manager) == (3, 'team3', '1900', 'manager')
+    assert (leader.id, leader.name) == (3, 'team3')
 
 
 @pytest.mark.asyncio
@@ -73,7 +73,7 @@ async def test_get_seasons(mock_session, league_id, expectation, db_session, lea
         season = result[0]
         assert (season.id, season.name) == (1, 'season1')
         leader = season.leader
-        assert (leader.id, leader.name, leader.founded, leader.manager) == (1, 'team1', '1900', 'manager')
+        assert (leader.id, leader.name) == (1, 'team1')
 
 
 @pytest.mark.asyncio

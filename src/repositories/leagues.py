@@ -9,9 +9,10 @@ from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
     SeasonWithLeaderSchema,
-    LeagueCountrySchema, SeasonRelSchema
+    LeagueCountrySchema,
+    SeasonRelSchema
 )
-from models.pydantic.teams import TeamSchema, TeamInSeasonSchema
+from models.pydantic.teams import TeamInSeasonSchema, BaseTeamSchema
 
 
 async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
@@ -25,9 +26,7 @@ async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
             Season.id,
             Season.name,
             Team.id,
-            Team.name,
-            Team.founded,
-            Team.manager
+            Team.name
         ).select_from(
             League
         ).join(
@@ -57,7 +56,7 @@ def to_many_leagues_schemas(
     result = []
     for row in rows:
         (league_id, league_name, country_id, country_name,
-         season_id, season_name, leader_id, leader_name, leader_founded, leader_manager) = row
+         season_id, season_name, leader_id, leader_name) = row
 
         result.append(LeagueWithCurrentSeasonSchema(
             id=league_id,
@@ -66,11 +65,9 @@ def to_many_leagues_schemas(
             seasons=SeasonWithLeaderSchema(
                 id=season_id,
                 name=season_name,
-                teams=TeamSchema(
+                teams=BaseTeamSchema(
                     id=leader_id,
-                    name=leader_name,
-                    founded=leader_founded,
-                    manager=leader_manager
+                    name=leader_name
                 ))
         ))
 
@@ -115,9 +112,7 @@ async def get_seasons(league_id: int) -> list[SeasonWithLeaderSchema]:
             Season.id,
             Season.name,
             Team.id,
-            Team.name,
-            Team.founded,
-            Team.manager
+            Team.name
         ).join(
             SeasonTeam, Season.id == SeasonTeam.season_id
         ).join(
@@ -139,15 +134,13 @@ async def get_seasons(league_id: int) -> list[SeasonWithLeaderSchema]:
 def to_many_seasons_schemas(rows: list[tuple]) -> list[SeasonWithLeaderSchema]:
     """Преобразует сырые данные сезонов в список pydantic схем"""
     result = []
-    for season_id, season_name, leader_id, leader_name, leader_founded, leader_manager in rows:
+    for season_id, season_name, leader_id, leader_name in rows:
         result.append(SeasonWithLeaderSchema(
             id=season_id,
             name=season_name,
-            teams=TeamSchema(
+            teams=BaseTeamSchema(
                 id=leader_id,
-                name=leader_name,
-                founded=leader_founded,
-                manager=leader_manager
+                name=leader_name
             )
         ))
 
