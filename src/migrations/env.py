@@ -10,6 +10,7 @@ from models.db.base import Base  # noqa
 from models.db.leagues import *
 from models.db.teams import *
 from models.db.persons import *
+from models.db.games import *
 
 config = context.config
 

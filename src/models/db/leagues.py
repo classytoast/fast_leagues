@@ -9,6 +9,7 @@ from models.db.base import Base
 if TYPE_CHECKING:
     from models.db.teams import Team
     from models.db.persons import Person
+    from models.db.games import Game
 
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
@@ -46,3 +47,4 @@ class Season(Base):
         back_populates="seasons",
         secondary="seasons_teams"
     )
+    games: Mapped[list["Game"]] = relationship(back_populates="season")
