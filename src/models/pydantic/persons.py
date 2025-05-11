@@ -23,7 +23,7 @@ class PersonDetailsSchema(BasePersonSchema):
 
 
 class BasePlayerSchema(BasePersonSchema):
-    team_number: int = Field(ge=1)
+    team_number: Optional[int] = Field(ge=1, default=None)
 
 
 class PlayerDetailsSchema(PersonDetailsSchema):

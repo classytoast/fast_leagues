@@ -23,7 +23,7 @@ class BaseGameSchema(BaseModel):
     guest_scored: int = Optional[Field(ge=0)]
 
 
-class EventType(Enum):
+class EventType(str, Enum):
     goal = 'goal'
     own_goal = 'own_goal'
     assist = 'assist'
