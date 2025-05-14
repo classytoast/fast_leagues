@@ -15,28 +15,34 @@ class EventType(Enum):
     red_card = 'red_card'
 
 
-class PersonDocument(BaseModel):
+class TeamEmbeddedObject(BaseModel):
     id: int
     name: str
 
 
-class EventDocument(BaseModel):
+class PersonEmbeddedObject(BaseModel):
+    id: int
+    name: str
+    team: 'TeamEmbeddedObject'
+
+
+class EventEmbeddedObject(BaseModel):
     event_type: EventType
     minute: str
-    person: 'PersonDocument'
+    person: 'PersonEmbeddedObject'
 
 
 class GameDocument(Document):
     game_id: int
     season_id: int
     league_id: int
-    home_start_composition: list['PersonDocument'] = []
-    guest_start_composition: list['PersonDocument'] = []
-    home_substitution: list['PersonDocument'] = []
-    guest_substitution: list['PersonDocument'] = []
-    home_manager: Optional['PersonDocument'] = None
-    guest_manager: Optional['PersonDocument'] = None
-    events: list['EventDocument'] = []
+    home_start_composition: list['PersonEmbeddedObject'] = []
+    guest_start_composition: list['PersonEmbeddedObject'] = []
+    home_substitution: list['PersonEmbeddedObject'] = []
+    guest_substitution: list['PersonEmbeddedObject'] = []
+    home_manager: Optional['PersonEmbeddedObject'] = None
+    guest_manager: Optional['PersonEmbeddedObject'] = None
+    events: list['EventEmbeddedObject'] = []
 
     class Settings:
         name = "games"
