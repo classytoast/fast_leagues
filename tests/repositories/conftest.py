@@ -3,9 +3,17 @@ from datetime import datetime
 import pytest_asyncio
 from sqlalchemy import delete
 
+from database import init_mongo_db
+from models.db.games import Game
 from models.db.leagues import League, Country, Season
 from models.db.persons import Person, Player, Manager
 from models.db.teams import Team, SeasonTeam
+from models.mongo_documents.games import (
+    PersonEmbeddedObject,
+    EventEmbeddedObject,
+    EventType,
+    GameDocument, TeamEmbeddedObject
+)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -17,7 +25,7 @@ async def db_session(session_factory, setup_database):
 
 
 @pytest_asyncio.fixture(scope="function")
-async def leagues_data(db_session):
+async def leagues_data(db_session, games_mongo_data):
     await db_session.execute(delete(League))
     await db_session.execute(delete(Country))
     await db_session.execute(delete(Season))
@@ -26,6 +34,7 @@ async def leagues_data(db_session):
     await db_session.execute(delete(Person))
     await db_session.execute(delete(Player))
     await db_session.execute(delete(Manager))
+    await db_session.execute(delete(Game))
 
     db_session.add_all([
         Country(id=1, name='country1'),
@@ -109,4 +118,66 @@ async def leagues_data(db_session):
     db_session.add_all(seasons)
     db_session.add_all(teams)
 
+    db_session.add_all([
+        Game(id=1, game_date=datetime(2025, 1, 1), season_id=1, home_team_id=1,
+             guest_team_id=2, home_scored=2, guest_scored=1),
+        Game(id=2, game_date=datetime(2025, 2, 1), season_id=3, home_team_id=3,
+             guest_team_id=1, home_scored=2, guest_scored=2),
+    ])
+
     await db_session.commit()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def games_mongo_data():
+    await init_mongo_db()
+
+    team1 = TeamEmbeddedObject(id=1, name="team1")
+    team2 = TeamEmbeddedObject(id=2, name="team2")
+    team3 = TeamEmbeddedObject(id=3, name="team3")
+
+    player1 = PersonEmbeddedObject(id=1, name="person1", team=team1)
+    player2 = PersonEmbeddedObject(id=2, name="person2", team=team1)
+    player3 = PersonEmbeddedObject(id=3, name="person3", team=team2)
+    player4 = PersonEmbeddedObject(id=4, name="person4", team=team3)
+    manager1 = PersonEmbeddedObject(id=1, name="person5", team=team1)
+    manager2 = PersonEmbeddedObject(id=2, name="person6", team=team2)
+
+    game1 = GameDocument(
+        game_id=1,
+        season_id=1,
+        league_id=1,
+        home_start_composition=[player1, player2],
+        guest_start_composition=[player3],
+        home_manager=manager1,
+        guest_manager=manager2,
+        events=[
+            EventEmbeddedObject(event_type=EventType.goal, minute="23", person=player1),
+            EventEmbeddedObject(event_type=EventType.goal, minute="30", person=player2),
+            EventEmbeddedObject(event_type=EventType.assist, minute="30", person=player1),
+            EventEmbeddedObject(event_type=EventType.goal, minute="68", person=player3),
+            EventEmbeddedObject(event_type=EventType.goal, minute="90", person=player3),
+            EventEmbeddedObject(event_type=EventType.yellow_card, minute="45", person=player1),
+            EventEmbeddedObject(event_type=EventType.red_card, minute="70", person=player1),
+            EventEmbeddedObject(event_type=EventType.unrealized_penalty_goal, minute="35", person=player3),
+        ]
+    )
+
+    game2 = GameDocument(
+        game_id=2,
+        season_id=3,
+        league_id=2,
+        home_start_composition=[player4],
+        guest_start_composition=[player1],
+        guest_substitution=[player2],
+        guest_manager=manager1,
+    )
+
+    await game1.insert()
+    await game2.insert()
+
+    yield
+
+    # Очистка после теста
+    await GameDocument.find({"game_id": game1.game_id}).delete()
+    await GameDocument.find({"game_id": game2.game_id}).delete()
