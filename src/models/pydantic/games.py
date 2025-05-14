@@ -5,7 +5,10 @@ from typing import TYPE_CHECKING, Optional
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from models.pydantic.leagues import SeasonSchema
+    from models.pydantic.leagues import (
+        SeasonSchema,
+        LeagueSchema
+    )
     from models.pydantic.teams import BaseTeamSchema
     from models.pydantic.persons import (
         PlayerInGameSchema,
@@ -21,6 +24,10 @@ class BaseGameSchema(BaseModel):
     guest_team: 'BaseTeamSchema'
     home_scored: int = Optional[Field(ge=0)]
     guest_scored: int = Optional[Field(ge=0)]
+
+
+class GameWithLeagueSchema(BaseGameSchema):
+    league: 'LeagueSchema'
 
 
 class EventType(str, Enum):

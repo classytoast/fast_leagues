@@ -4,13 +4,15 @@ from models.pydantic.leagues import (
     SeasonSchema,
     SeasonWithLeaderSchema,
     SeasonRelSchema,
-    SeasonWithPlayersSchema
+    SeasonWithPlayersSchema,
+    SeasonWithTopPlayersSchema
 )
 from models.pydantic.persons import (
     BasePersonSchema,
     BasePlayerSchema,
     PlayerDetailsSchema,
-    PersonDetailsSchema, PlayerInGameSchema
+    PersonDetailsSchema, PlayerInGameSchema,
+    PlayerStatsSummarySchema
 )
 from models.pydantic.teams import (
     TeamRelSchema,
@@ -27,6 +29,7 @@ TeamDetailsSchema.model_rebuild()
 CountrySchema.model_rebuild()
 SeasonSchema.model_rebuild()
 SeasonWithLeaderSchema.model_rebuild()
+SeasonWithTopPlayersSchema.model_rebuild()
 SeasonRelSchema.model_rebuild()
 BasePersonSchema.model_rebuild()
 BasePlayerSchema.model_rebuild()
@@ -34,5 +37,6 @@ PlayerDetailsSchema.model_rebuild()
 PlayerInGameSchema.model_rebuild()
 SeasonWithPlayersSchema.model_rebuild()
 PersonDetailsSchema.model_rebuild()
+PlayerStatsSummarySchema.model_rebuild()
 GameEventSchema.model_rebuild()
 GameDetailSchema.model_rebuild()
