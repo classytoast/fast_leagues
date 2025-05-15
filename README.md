@@ -32,7 +32,7 @@
 
 1. Клонируйте репозиторий:
    ```
-   git clone https://github.com/yourusername/sports-fastapi-backend.git
+   git clone https://github.com/classytoast/fast_leagues.git
    cd sports-fastapi-backend
    ```
 
@@ -68,7 +68,7 @@
     docker-compose up --build
     ```
 
-2. Приложение будет доступно по адресу http://localhost:5000
+2. Приложение будет доступно по адресу http://localhost:8000
 
 ## Тестирование
 
