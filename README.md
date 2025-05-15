@@ -33,7 +33,7 @@
 1. Клонируйте репозиторий:
    ```
    git clone https://github.com/classytoast/fast_leagues.git
-   cd sports-fastapi-backend
+   cd fast_leagues
    ```
 
 2. Создайте виртуальное окружение:
