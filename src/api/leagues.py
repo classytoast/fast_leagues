@@ -6,7 +6,8 @@ from models.pydantic.leagues import (
     LeagueCountrySchema,
     SeasonWithLeaderSchema,
     SeasonRelSchema,
-    SeasonWithPlayersSchema
+    SeasonWithPlayersSchema,
+    SeasonWithTopPlayersSchema
 )
 from services import leagues as service
 
@@ -55,6 +56,16 @@ async def get_players_in_season(league_id: int, season_id: int) -> SeasonWithPla
     """Получить информацию об игроках в конкретном сезоне лиги"""
     try:
         season = await service.get_players_in_season(league_id, season_id)
+    except Missing as m:
+        raise HTTPException(status_code=404, detail=m.msg)
+    return season
+
+
+@router.get("/{league_id}/seasons/{season_id}/scores")
+async def get_scores_in_season(league_id: int, season_id: int) -> SeasonWithTopPlayersSchema:
+    """Получить информацию о бомбардирах в конкретном сезоне лиги"""
+    try:
+        season = await service.get_scores_in_season(league_id, season_id)
     except Missing as m:
         raise HTTPException(status_code=404, detail=m.msg)
     return season
