@@ -3,8 +3,15 @@ from typing import TYPE_CHECKING
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
-    from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
-    from models.pydantic.persons import PlayerDetailsSchema, PlayerStatsSummarySchema
+    from models.pydantic.teams import (
+        BaseTeamSchema,
+        TeamInSeasonSchema
+    )
+    from models.pydantic.persons import (
+        PlayerDetailsSchema,
+        PlayerStatsSummarySchema
+    )
+    from models.pydantic.games import BaseGameSchema
 
 
 class CountrySchema(BaseModel):
@@ -44,6 +51,10 @@ class SeasonWithPlayersSchema(SeasonSchema):
 
 class SeasonWithTopPlayersSchema(SeasonSchema):
     players: list['PlayerStatsSummarySchema']
+
+
+class SeasonWithGamesSchema(SeasonSchema):
+    games: list['BaseGameSchema']
 
 
 class SeasonRelSchema(SeasonSchema):

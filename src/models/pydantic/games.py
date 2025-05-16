@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 
 class BaseGameSchema(BaseModel):
     id: int
-    season: 'SeasonSchema'
     game_date: Optional[datetime]
     home_team: 'BaseTeamSchema'
     guest_team: 'BaseTeamSchema'
@@ -26,7 +25,11 @@ class BaseGameSchema(BaseModel):
     guest_scored: int = Optional[Field(ge=0)]
 
 
-class GameWithLeagueSchema(BaseGameSchema):
+class GameWithSeasonSchema(BaseGameSchema):
+    season: 'SeasonSchema'
+
+
+class GameWithLeagueSchema(GameWithSeasonSchema):
     league: 'LeagueSchema'
 
 
@@ -46,7 +49,7 @@ class GameEventSchema(BaseModel):
     person: 'BasePersonSchema'
 
 
-class GameDetailSchema(BaseGameSchema):
+class GameDetailSchema(GameWithSeasonSchema):
     home_team_composition: list['PlayerInGameSchema']
     guest_team_composition: list['PlayerInGameSchema']
     home_manager: Optional['BasePersonSchema']
