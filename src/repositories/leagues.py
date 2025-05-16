@@ -7,10 +7,12 @@ from sqlalchemy.orm import selectinload
 
 from database import async_session
 from errors import Missing
+from models.db.games import Game
 from models.db.leagues import League, Country, Season
 from models.db.persons import Player, Person
 from models.db.teams import SeasonTeam, Team
 from models.mongo_documents.games import GameDocument
+from models.pydantic.games import BaseGameSchema
 from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
@@ -18,10 +20,17 @@ from models.pydantic.leagues import (
     LeagueCountrySchema,
     SeasonRelSchema,
     SeasonWithPlayersSchema,
-    SeasonWithTopPlayersSchema
+    SeasonWithTopPlayersSchema,
+    SeasonWithGamesSchema
 )
-from models.pydantic.persons import PlayerDetailsSchema, PlayerStatsSummarySchema
-from models.pydantic.teams import TeamInSeasonSchema, BaseTeamSchema
+from models.pydantic.persons import (
+    PlayerDetailsSchema,
+    PlayerStatsSummarySchema
+)
+from models.pydantic.teams import (
+    TeamInSeasonSchema,
+    BaseTeamSchema
+)
 
 
 async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
@@ -294,6 +303,42 @@ def to_season_with_players_schema(season_data: Season) -> SeasonWithPlayersSchem
         name=season_data.name,
         players=players
     )
+
+
+async def get_games_for_season(league_id: int, season_id: int) -> SeasonWithGamesSchema:
+    """Выгрузить из БД информацию об матчах в конкретном сезоне лиги"""
+    async with async_session() as session:
+        query = select(
+            Season
+        ).outerjoin(
+            Game
+        ).options(
+            selectinload(
+                Season.games
+            ).joinedload(
+                Game.home_team
+            ),
+            selectinload(
+                Season.games
+            ).joinedload(
+                Game.guest_team
+            )
+        ).filter(
+            and_(
+                Season.league_id == league_id,
+                Season.id == season_id
+            )
+        ).order_by(
+            Game.game_date
+        )
+
+        result = await session.execute(query)
+        try:
+            season_result = result.unique().scalars().one()
+        except NoResultFound:
+            raise Missing(f"сезонa с id лиги - {league_id} и id сезона - {season_id} не найдено")
+
+    return SeasonWithGamesSchema.model_validate(season_result, from_attributes=True)
 
 
 async def get_scores_in_season(league_id: int, season_id: int) -> SeasonWithTopPlayersSchema:
