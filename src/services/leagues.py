@@ -4,7 +4,8 @@ from models.pydantic.leagues import (
     SeasonWithLeaderSchema,
     SeasonRelSchema,
     SeasonWithPlayersSchema,
-    SeasonWithTopPlayersSchema
+    SeasonWithTopPlayersSchema,
+    SeasonWithGamesSchema
 )
 from repositories import leagues as data
 
@@ -36,6 +37,12 @@ async def get_season(league_id: int, season_id: int) -> SeasonRelSchema:
 async def get_players_in_season(league_id: int, season_id: int) -> SeasonWithPlayersSchema:
     """Получает информацию об игроках в конкретном сезоне лиги"""
     season = await data.get_players_in_season(league_id, season_id)
+    return season
+
+
+async def get_games_for_season(league_id: int, season_id: int) -> SeasonWithGamesSchema:
+    """Получает информацию о матчах в конкретном сезоне лиги"""
+    season = await data.get_games_for_season(league_id, season_id)
     return season
 
 

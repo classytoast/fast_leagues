@@ -7,7 +7,7 @@ from services.leagues import (
     get_one_league,
     get_seasons,
     get_season,
-    get_players_in_season, get_scores_in_season
+    get_players_in_season, get_scores_in_season, get_games_for_season
 )
 
 
@@ -69,6 +69,18 @@ async def test_get_players_in_season(mock_repo_get_players):
 
     assert result == repo_return
     mock_repo_get_players.assert_called_once_with(1, 2)
+
+
+@pytest.mark.asyncio
+@patch("services.leagues.data.get_games_for_season")
+async def test_get_games_for_season(mock_repo_get_games):
+    repo_return = Mock()
+    mock_repo_get_games.return_value = repo_return
+
+    result = await get_games_for_season(1, 2)
+
+    assert result == repo_return
+    mock_repo_get_games.assert_called_once_with(1, 2)
 
 
 @pytest.mark.asyncio
