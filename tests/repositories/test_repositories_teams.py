@@ -1,10 +1,15 @@
+from datetime import datetime
 from unittest.mock import patch
 from contextlib import nullcontext as not_raise
 
 import pytest
 
 from errors import Missing
-from repositories.teams import get_all_teams, get_one_team
+from repositories.teams import (
+    get_all_teams,
+    get_one_team,
+    get_games_for_team
+)
 
 
 @pytest.mark.asyncio
@@ -59,4 +64,58 @@ async def test_get_one_team(mock_session, db_session, team_id, expected_team, ex
         players = result.players
         assert len(players) == len(expected_players)
         assert [(p.id, p.name, p.team_number) for p in players] == expected_players
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "team_id, expected_result, expectation",
+    [
+        (1,
+         dict(
+             id=1,
+             name='team1',
+             games=[
+                 dict(id=2, game_date=datetime(2025, 2, 1),
+                      home_team=dict(id=3, name='team3'), guest_team=dict(id=1, name='team1'),
+                      home_scored=2, guest_scored=2),
+                 dict(id=1, game_date=datetime(2025, 1, 1),
+                      home_team=dict(id=1, name='team1'), guest_team=dict(id=2, name='team2'),
+                      home_scored=2, guest_scored=1),
+             ]
+         ),
+         not_raise()),
+
+        (3,
+         dict(
+             id=3,
+             name='team3',
+             games=[
+                 dict(id=2, game_date=datetime(2025, 2, 1),
+                      home_team=dict(id=3, name='team3'), guest_team=dict(id=1, name='team1'),
+                      home_scored=2, guest_scored=2),
+             ]
+         ),
+         not_raise()),
+
+        (999, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.teams.async_session")
+async def test_get_games_for_team(mock_session, team_id, expected_result,
+                                  expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_games_for_team(team_id)
+
+        assert result.id == expected_result['id']
+        assert result.name == expected_result['name']
+
+        for idx in range(len(result.games)):
+            assert result.games[idx].id == expected_result['games'][idx]['id']
+            assert result.games[idx].game_date == expected_result['games'][idx]['game_date']
+            assert dict(result.games[idx].home_team) == expected_result['games'][idx]['home_team']
+            assert dict(result.games[idx].guest_team) == expected_result['games'][idx]['guest_team']
+            assert result.games[idx].home_scored == expected_result['games'][idx]['home_scored']
+            assert result.games[idx].guest_scored == expected_result['games'][idx]['guest_scored']
 
