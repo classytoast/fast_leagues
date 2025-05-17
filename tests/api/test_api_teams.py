@@ -1,3 +1,4 @@
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -5,12 +6,21 @@ from httpx import AsyncClient, ASGITransport
 
 from errors import Missing
 from main import app
+from models.pydantic.games import BaseGameSchema
 from models.pydantic.leagues import (
     CountrySchema,
     SeasonSchema
 )
-from models.pydantic.persons import BasePersonSchema, BasePlayerSchema
-from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
+from models.pydantic.persons import (
+    BasePersonSchema,
+    BasePlayerSchema
+)
+from models.pydantic.teams import (
+    TeamRelSchema,
+    TeamDetailsSchema,
+    TeamWithGamesSchema,
+    BaseTeamSchema
+)
 
 
 @pytest.mark.asyncio
@@ -82,3 +92,73 @@ async def test_get_one_team_missing(mock_service_get_one):
     assert response.status_code == 404
     assert response.json() == {"detail": "Team not found"}
     mock_service_get_one.assert_called_once_with(999)
+
+
+@pytest.mark.asyncio
+@patch("api.teams.service.get_games_for_team")
+async def test_get_games_for_team(mock_service_get_games):
+    service_get_games_return_value = TeamWithGamesSchema(
+        id=1,
+        name='team1',
+        games=[
+            BaseGameSchema(
+                id=2,
+                game_date=datetime(2025, 2, 1),
+                home_team=BaseTeamSchema(id=3, name='team3'),
+                guest_team=BaseTeamSchema(id=1, name='team1'),
+                home_scored=2,
+                guest_scored=2
+            ),
+            BaseGameSchema(
+                id=1,
+                game_date=datetime(2025, 1, 1),
+                home_team=BaseTeamSchema(id=1, name='team1'),
+                guest_team=BaseTeamSchema(id=2, name='team2'),
+                home_scored=2,
+                guest_scored=1
+            ),
+        ]
+    )
+    mock_service_get_games.return_value = service_get_games_return_value
+
+    expected_response = dict(
+        id=1,
+        name='team1',
+        games=[
+            dict(
+                id=2,
+                game_date='2025-02-01T00:00:00',
+                home_team=dict(id=3, name='team3'),
+                guest_team=dict(id=1, name='team1'),
+                home_scored=2,
+                guest_scored=2
+            ),
+            dict(
+                id=1,
+                game_date='2025-01-01T00:00:00',
+                home_team=dict(id=1, name='team1'),
+                guest_team=dict(id=2, name='team2'),
+                home_scored=2,
+                guest_scored=1
+            )
+        ]
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/teams/1/games")
+
+    assert response.json() == expected_response
+    mock_service_get_games.assert_called_once_with(1)
+
+
+@pytest.mark.asyncio
+@patch("api.teams.service.get_games_for_team")
+async def test_get_games_for_team_missing(mock_service_get_games):
+    mock_service_get_games.side_effect = Missing("Team not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/teams/999/games")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Team not found"}
+    mock_service_get_games.assert_called_once_with(999)
