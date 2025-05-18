@@ -1,7 +1,11 @@
 from fastapi import APIRouter, HTTPException
 
 from errors import Missing
-from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
+from models.pydantic.teams import (
+    TeamRelSchema,
+    TeamDetailsSchema,
+    TeamWithGamesSchema
+)
 from services import teams as service
 
 
@@ -20,6 +24,16 @@ async def get_one_team(team_id: int) -> TeamRelSchema:
     """Получить полную информацию о конкретной команде по её ID"""
     try:
         team = await service.get_one_team(team_id)
+    except Missing as m:
+        raise HTTPException(status_code=404, detail=m.msg)
+    return team
+
+
+@router.get("/{team_id}/games")
+async def get_games_for_team(team_id: int) -> TeamWithGamesSchema:
+    """Получить информацию о матчах конкретной команды по её ID"""
+    try:
+        team = await service.get_games_for_team(team_id)
     except Missing as m:
         raise HTTPException(status_code=404, detail=m.msg)
     return team

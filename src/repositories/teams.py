@@ -4,11 +4,23 @@ from sqlalchemy.orm import selectinload, joinedload
 
 from database import async_session
 from errors import Missing
+from models.db.games import Game
 from models.db.persons import Manager, Player
 from models.db.teams import Team
-from models.pydantic.leagues import CountrySchema, SeasonSchema
-from models.pydantic.persons import BasePersonSchema, BasePlayerSchema
-from models.pydantic.teams import TeamRelSchema, TeamDetailsSchema
+from models.pydantic.games import BaseGameSchema
+from models.pydantic.leagues import (
+    CountrySchema,
+    SeasonSchema
+)
+from models.pydantic.persons import (
+    BasePersonSchema,
+    BasePlayerSchema
+)
+from models.pydantic.teams import (
+    TeamRelSchema,
+    TeamDetailsSchema,
+    TeamWithGamesSchema
+)
 
 
 async def get_all_teams() -> list[TeamDetailsSchema]:
@@ -91,3 +103,58 @@ def to_one_team_schema(
     )
 
     return team_schema
+
+
+async def get_games_for_team(team_id: int) -> TeamWithGamesSchema:
+    """Выгрузить из БД информацию об матчах для определенной команды"""
+    async with async_session() as session:
+        query = select(
+            Team
+        ).options(
+            selectinload(
+                Team.home_games
+            ).joinedload(
+                Game.home_team
+            ),
+            selectinload(
+                Team.home_games
+            ).joinedload(
+                Game.guest_team
+            )
+        ).options(
+            selectinload(
+                Team.guest_games
+            ).joinedload(
+                Game.home_team
+            ),
+            selectinload(
+                Team.guest_games
+            ).joinedload(
+                Game.guest_team
+            )
+        ).filter(
+            Team.id == team_id
+        )
+
+        result = await session.execute(query)
+        try:
+            team_result = result.unique().scalars().one()
+        except NoResultFound:
+            raise Missing(f"команда с id - {team_id} не найдена")
+
+    return to_games_for_team_schema(team_result)
+
+
+def to_games_for_team_schema(
+        team_data: Team
+) -> TeamWithGamesSchema:
+    """Преобразует сырой SQL-результат в pydantic схему матчей команды"""
+    home_games = [BaseGameSchema.model_validate(x, from_attributes=True) for x in team_data.home_games]
+    guest_games = [BaseGameSchema.model_validate(x, from_attributes=True) for x in team_data.guest_games]
+    all_games = sorted(home_games + guest_games, key=lambda x: x.game_date, reverse=True)
+
+    return TeamWithGamesSchema(
+        id=team_data.id,
+        name=team_data.name,
+        games=all_games
+    )

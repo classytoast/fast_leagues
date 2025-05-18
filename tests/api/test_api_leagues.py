@@ -6,15 +6,25 @@ from httpx import AsyncClient, ASGITransport
 
 from errors import Missing
 from main import app
+from models.pydantic.games import BaseGameSchema
 from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
     SeasonWithLeaderSchema,
     LeagueCountrySchema,
-    SeasonRelSchema, SeasonWithPlayersSchema
+    SeasonRelSchema,
+    SeasonWithPlayersSchema,
+    SeasonWithTopPlayersSchema,
+    SeasonWithGamesSchema
 )
-from models.pydantic.persons import PlayerDetailsSchema
-from models.pydantic.teams import BaseTeamSchema, TeamInSeasonSchema
+from models.pydantic.persons import (
+    PlayerDetailsSchema,
+    PlayerStatsSummarySchema
+)
+from models.pydantic.teams import (
+    BaseTeamSchema,
+    TeamInSeasonSchema
+)
 
 
 @pytest.mark.asyncio
@@ -282,3 +292,134 @@ async def test_get_players_in_season_missing(mock_service_get_players, endpoint,
     assert response.status_code == 404
     assert response.json() == {"detail": "Season not found"}
     mock_service_get_players.assert_called_once_with(*service_args)
+
+
+@pytest.mark.asyncio
+@patch("api.leagues.service.get_games_for_season")
+async def test_get_games_in_season(mock_service_get_games):
+    service_get_games_return_value = SeasonWithGamesSchema(
+            id=1,
+            name='2024/2025',
+            games=[
+                BaseGameSchema(
+                    id=1,
+                    game_date=datetime(2025, 1, 1),
+                    home_team=BaseTeamSchema(id=1, name='team1'),
+                    guest_team=BaseTeamSchema(id=2, name='team2'),
+                    home_scored=3,
+                    guest_scored=0
+                ),
+                BaseGameSchema(
+                    id=2,
+                    game_date=datetime(2025, 2, 1),
+                    home_team=BaseTeamSchema(id=3, name='team3'),
+                    guest_team=BaseTeamSchema(id=4, name='team4'),
+                    home_scored=1,
+                    guest_scored=2
+                ),
+            ]
+    )
+    mock_service_get_games.return_value = service_get_games_return_value
+
+    expected_response = dict(
+        id=1,
+        name='2024/2025',
+        games=[
+            dict(
+                id=1,
+                game_date='2025-01-01T00:00:00',
+                home_team=dict(id=1, name='team1'),
+                guest_team=dict(id=2, name='team2'),
+                home_scored=3,
+                guest_scored=0
+            ),
+            dict(
+                id=2,
+                game_date='2025-02-01T00:00:00',
+                home_team=dict(id=3, name='team3'),
+                guest_team=dict(id=4, name='team4'),
+                home_scored=1,
+                guest_scored=2
+            )
+        ]
+    )
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/leagues/1/seasons/1/games")
+
+    assert response.json() == expected_response
+    mock_service_get_games.assert_called_once_with(1, 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "endpoint, service_args",
+    [
+        ("/leagues/1/seasons/999/games", (1, 999)),
+        ("/leagues/999/seasons/1/games", (999, 1)),
+    ]
+)
+@patch("api.leagues.service.get_games_for_season")
+async def test_get_games_in_season_missing(mock_service_get_games, endpoint, service_args):
+    mock_service_get_games.side_effect = Missing("Season not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(endpoint)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Season not found"}
+    mock_service_get_games.assert_called_once_with(*service_args)
+
+
+@pytest.mark.asyncio
+@patch("api.leagues.service.get_scores_in_season")
+async def test_get_scores_in_season(mock_service_get_scores):
+    service_get_scores_return_value = SeasonWithTopPlayersSchema(
+            id=1,
+            name='2024/2025',
+            players=[
+                PlayerStatsSummarySchema(
+                    id=1,
+                    name='player1',
+                    team_number=10,
+                    team=BaseTeamSchema(id=1, name='team1'),
+                    games=10,
+                    effective_actions=15
+                ),
+                PlayerStatsSummarySchema(
+                    id=2,
+                    name='player2',
+                    team_number=None,
+                    team=BaseTeamSchema(id=2, name='team2'),
+                    games=10,
+                    effective_actions=0
+                )
+            ]
+    )
+    mock_service_get_scores.return_value = service_get_scores_return_value
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/leagues/1/seasons/1/scores")
+
+    assert response.json() == service_get_scores_return_value.model_dump()
+    mock_service_get_scores.assert_called_once_with(1, 1)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "endpoint, service_args",
+    [
+        ("/leagues/1/seasons/999/scores", (1, 999)),
+        ("/leagues/999/seasons/1/scores", (999, 1)),
+    ]
+)
+@patch("api.leagues.service.get_scores_in_season")
+async def test_get_scores_in_season_missing(mock_service_get_scores, endpoint, service_args):
+    mock_service_get_scores.side_effect = Missing("Season not found")
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get(endpoint)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Season not found"}
+    mock_service_get_scores.assert_called_once_with(*service_args)

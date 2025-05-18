@@ -9,6 +9,7 @@ from models.db.base import Base
 if TYPE_CHECKING:
     from models.db.leagues import Country, Season
     from models.db.persons import Player, Manager
+    from models.db.games import Game
 
 int_pk = Annotated[int, mapped_column(primary_key=True)]
 int_default_0 = Annotated[int, mapped_column(default=0)]
@@ -28,6 +29,14 @@ class Team(Base):
     )
     manager: Mapped["Manager"] = relationship(back_populates="team")
     players: Mapped[list["Player"]] = relationship(back_populates="team")
+    home_games: Mapped[list["Game"]] = relationship(
+        back_populates="home_team",
+        foreign_keys="[Game.home_team_id]"
+    )
+    guest_games: Mapped[list["Game"]] = relationship(
+        back_populates="guest_team",
+        foreign_keys="[Game.guest_team_id]"
+    )
 
 
 class SeasonTeam(Base):

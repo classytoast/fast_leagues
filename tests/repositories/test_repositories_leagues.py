@@ -10,7 +10,9 @@ from repositories.leagues import (
     get_one_league,
     get_seasons,
     get_season,
-    get_players_in_season
+    get_players_in_season,
+    get_scores_in_season,
+    get_games_for_season
 )
 
 
@@ -159,3 +161,97 @@ async def test_get_players_in_season(mock_session, league_id, season_id, expecte
         assert len(players) == len(expected_players)
         assert [(p.id, p.name, p.full_name, p.birth_date, p.team_number, p.country.id, p.team.id)
                 for p in players] == expected_players
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "league_id, season_id, expected_result, expectation",
+    [
+        (1, 1,
+         dict(
+             id=1,
+             name='season1',
+             games=[
+                 dict(id=1, game_date=datetime(2025, 1, 1),
+                      home_team=dict(id=1, name='team1'), guest_team=dict(id=2, name='team2'),
+                      home_scored=2, guest_scored=1),
+             ]
+         ), not_raise()),
+
+        (1, 2, dict(id=2, name='season2', games=[]), not_raise()),
+
+        (1, 15, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.leagues.async_session")
+async def test_get_games_for_season(mock_session, league_id, season_id, expected_result,
+                                    expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_games_for_season(league_id, season_id)
+
+        assert result.id == expected_result['id']
+        assert result.name == expected_result['name']
+
+        for idx in range(len(result.games)):
+            assert result.games[idx].id == expected_result['games'][idx]['id']
+            assert result.games[idx].game_date == expected_result['games'][idx]['game_date']
+            assert dict(result.games[idx].home_team) == expected_result['games'][idx]['home_team']
+            assert dict(result.games[idx].guest_team) == expected_result['games'][idx]['guest_team']
+            assert result.games[idx].home_scored == expected_result['games'][idx]['home_scored']
+            assert result.games[idx].guest_scored == expected_result['games'][idx]['guest_scored']
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "league_id, season_id, expected_result, expectation",
+    [
+        (1, 1,
+         dict(
+             id=1,
+             name='season1',
+             players=[
+                 dict(id=3, name='person3', team_number=None,
+                      team=dict(id=2, name='team2'), games=1, effective_actions=2),
+                 dict(id=1, name='person1', team_number=None,
+                      team=dict(id=1, name='team1'), games=1, effective_actions=1),
+                 dict(id=2, name='person2', team_number=None,
+                      team=dict(id=1, name='team1'), games=1, effective_actions=1),
+             ]
+         ), not_raise()),
+
+        (1, 2, dict(
+             id=2,
+             name='season2',
+             players=[]
+         ), not_raise()),
+
+        (2, 3, dict(
+             id=3,
+             name='season3',
+             players=[
+                 dict(id=1, name='person1', team_number=None,
+                      team=dict(id=1, name='team1'), games=1, effective_actions=0),
+                 dict(id=4, name='person4', team_number=None,
+                      team=dict(id=3, name='team3'), games=1, effective_actions=0),
+             ]
+         ), not_raise()),
+
+        (1, 15, None, pytest.raises(Missing)),
+    ]
+)
+@patch("repositories.leagues.async_session")
+async def test_get_scores_in_season(mock_session, league_id, season_id, expected_result,
+                                    expectation, db_session, leagues_data):
+    mock_session.return_value = db_session
+
+    with expectation:
+        result = await get_scores_in_season(league_id, season_id)
+
+        assert result.id == expected_result['id']
+        assert result.name == expected_result['name']
+
+        for idx in range(len(result.players)):
+            assert result.players[idx].id == expected_result['players'][idx]['id']
+            assert result.players[idx].name == expected_result['players'][idx]['name']

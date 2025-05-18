@@ -1,22 +1,36 @@
+import bisect
+
 from sqlalchemy import select, and_
 from sqlalchemy.exc import NoResultFound
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import async_session
 from errors import Missing
+from models.db.games import Game
 from models.db.leagues import League, Country, Season
 from models.db.persons import Player, Person
 from models.db.teams import SeasonTeam, Team
+from models.mongo_documents.games import GameDocument
+from models.pydantic.games import BaseGameSchema
 from models.pydantic.leagues import (
     CountrySchema,
     LeagueWithCurrentSeasonSchema,
     SeasonWithLeaderSchema,
     LeagueCountrySchema,
     SeasonRelSchema,
-    SeasonWithPlayersSchema
+    SeasonWithPlayersSchema,
+    SeasonWithTopPlayersSchema,
+    SeasonWithGamesSchema
 )
-from models.pydantic.persons import PlayerDetailsSchema
-from models.pydantic.teams import TeamInSeasonSchema, BaseTeamSchema
+from models.pydantic.persons import (
+    PlayerDetailsSchema,
+    PlayerStatsSummarySchema
+)
+from models.pydantic.teams import (
+    TeamInSeasonSchema,
+    BaseTeamSchema
+)
 
 
 async def get_all_leagues() -> list[LeagueWithCurrentSeasonSchema]:
@@ -285,6 +299,171 @@ def to_season_with_players_schema(season_data: Season) -> SeasonWithPlayersSchem
             ))
 
     return SeasonWithPlayersSchema(
+        id=season_data.id,
+        name=season_data.name,
+        players=players
+    )
+
+
+async def get_games_for_season(league_id: int, season_id: int) -> SeasonWithGamesSchema:
+    """Выгрузить из БД информацию об матчах в конкретном сезоне лиги"""
+    async with async_session() as session:
+        query = select(
+            Season
+        ).outerjoin(
+            Game
+        ).options(
+            selectinload(
+                Season.games
+            ).joinedload(
+                Game.home_team
+            ),
+            selectinload(
+                Season.games
+            ).joinedload(
+                Game.guest_team
+            )
+        ).filter(
+            and_(
+                Season.league_id == league_id,
+                Season.id == season_id
+            )
+        ).order_by(
+            Game.game_date
+        )
+
+        result = await session.execute(query)
+        try:
+            season_result = result.unique().scalars().one()
+        except NoResultFound:
+            raise Missing(f"сезонa с id лиги - {league_id} и id сезона - {season_id} не найдено")
+
+    return SeasonWithGamesSchema.model_validate(season_result, from_attributes=True)
+
+
+async def get_scores_in_season(league_id: int, season_id: int) -> SeasonWithTopPlayersSchema:
+    """Выгрузить из БД информацию о бомбардирах в конкретном сезоне лиги"""
+    async with async_session() as session:
+        base_season = await get_base_season(session, league_id, season_id)
+
+        games_for_players = await get_number_of_games_for_players_in_season(season_id)
+
+        top_scores = await get_top_scores_in_season(season_id)
+
+    return to_season_with_top_players_schema(
+        base_season,
+        games_for_players,
+        top_scores,
+        'goals'
+    )
+
+
+async def get_base_season(
+        session: AsyncSession,
+        league_id: int,
+        season_id: int
+) -> Season:
+    """Выгрузить базовые данные из бд о конкретном сезоне"""
+    query = select(
+        Season
+    ).filter(
+        and_(
+            Season.league_id == league_id,
+            Season.id == season_id
+        )
+    )
+    result = await session.execute(query)
+    try:
+        season_result = result.scalars().one()
+    except NoResultFound:
+        raise Missing(f"сезонa с id лиги - {league_id} и id сезона - {season_id} не найдено")
+
+    return season_result
+
+
+async def get_number_of_games_for_players_in_season(
+        season_id: int
+) -> list[dict[str, dict[str, str | int] | int]]:
+    """Выгрузить данные из mongodb о количестве матчей для каждого игрока в сезоне"""
+    pipeline = [
+        {"$match": {"season_id": season_id}},
+
+        {"$project": {
+            "players": {
+                "$concatArrays": ["$home_start_composition", "$guest_start_composition"]
+            }
+        }},
+
+        {"$unwind": "$players"},
+
+        {"$group": {
+            "_id": {"player_id": "$players.id", "player_name": "$players.name",
+                    "team_id": "$players.team.id", "team_name": "$players.team.name"},
+            "games": {"$sum": 1}
+        }},
+
+        {"$sort": {"_id.player_id": 1}}
+    ]
+
+    return await GameDocument.aggregate(pipeline).to_list()
+
+
+async def get_top_scores_in_season(
+        season_id: int
+) -> list[dict[str, dict[str, str | int] | int]]:
+    """Выгрузить данные из mongodb о лучших бомбардирах в сезоне"""
+    pipeline = [
+        {"$match": {"season_id": season_id}},
+
+        {"$unwind": "$events"},
+
+        {"$match": {
+            "events.event_type": {"$in": ["goal", "penalty_goal"]}
+        }},
+
+        {"$group": {
+            "_id": {"player_id": "$events.person.id", "player_name": "$events.person.name",
+                    "team_id": "$events.person.team.id", "team_name": "$events.person.team.name"},
+            "goals": {"$sum": 1}
+        }},
+
+        {"$sort": {"_id.player_id": 1}}
+    ]
+
+    return await GameDocument.aggregate(pipeline).to_list()
+
+
+def to_season_with_top_players_schema(
+        season_data: Season,
+        players_with_games: list[dict[str, dict[str, str | int] | int]],
+        top_players: list[dict[str, dict[str, str | int] | int]],
+        event_type: str
+) -> SeasonWithTopPlayersSchema:
+    """Собирает pydantic схему сезона о лучших игроках по конкретному показателю"""
+    players = []
+    for player in players_with_games:
+        idx_player_with_actions = bisect.bisect_left(
+            top_players,
+            player['_id']['player_id'],
+            key=lambda x: x['_id']['player_id']
+        )
+        try:
+            effective_actions = top_players[idx_player_with_actions][event_type]
+        except IndexError:
+            effective_actions = 0
+
+        players.append(PlayerStatsSummarySchema(
+            id=player['_id']['player_id'],
+            name=player['_id']['player_name'],
+            team_number=None,
+            team=BaseTeamSchema(id=player['_id']['team_id'], name=player['_id']['team_name']),
+            games=player['games'],
+            effective_actions=effective_actions
+        ))
+
+    players.sort(key=lambda x: (-x.effective_actions, x.games, x.name))
+
+    return SeasonWithTopPlayersSchema(
         id=season_data.id,
         name=season_data.name,
         players=players
