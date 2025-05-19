@@ -9,4 +9,7 @@ RUN pip install --upgrade pip \
 
 COPY . .
 
-ENTRYPOINT ["python", "./src/main.py"]
+RUN chmod +x src/prestart.sh
+
+ENTRYPOINT ["src/prestart.sh"]
+CMD ["python", "./src/main.py"]
